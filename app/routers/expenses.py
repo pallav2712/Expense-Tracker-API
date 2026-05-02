@@ -1,7 +1,10 @@
 from fastapi import APIRouter, status, HTTPException
+from typing import Optional, List
 
 from .. import schemas
 from ..database import conn, cursor
+from ..month_dict import monthdict
+ 
 
 
 
@@ -39,7 +42,7 @@ def update(id: int, data: schemas.UserUpdate):
     entity = cursor.fetchone()
 
     if not entity:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Id not found")
     
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
 
@@ -73,9 +76,35 @@ def update(id: int):
     entity = cursor.fetchone()
 
     if not entity:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Id not found")
 
 
     cursor.execute("DELETE  FROM expense WHERE id = %s RETURNING *", (id,))
     deleted_entity = cursor.fetchone()
     conn.commit()
+
+
+
+#(Without Filter) GET /expenses
+#(With filter) GET /expenses?month=january
+@router.get("/",status_code=status.HTTP_200_OK, response_model=List[schemas.PostOut])
+def get_expenses( month: Optional[str] = "" ):
+    #print(month)
+    try:
+        if month == "":
+            cursor.execute("""SELECT * FROM expense""")
+
+        else:
+            int_month = monthdict[month]
+            cursor.execute("""SELECT * FROM expense WHERE EXTRACT(MONTH FROM created_at) = %s""", (int_month,))
+        
+        data = cursor.fetchall()
+    
+    except:
+            raise HTTPException(status_code=400, detail="Data not found")
+
+    return data
+
+
+
+    
