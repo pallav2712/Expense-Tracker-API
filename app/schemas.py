@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 
 
@@ -17,3 +18,7 @@ class PostOut(PostBase):
     #model_config = ConfigDict(from_attributes=True)
 
 
+class UserUpdate(BaseModel):
+    item: Optional[str] = None
+    quantity: Optional[int] = None
+    price: Optional[int] = None
