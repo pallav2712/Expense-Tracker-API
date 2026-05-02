@@ -22,3 +22,9 @@ class UserUpdate(BaseModel):
     item: Optional[str] = None
     quantity: Optional[int] = None
     price: Optional[int] = None
+
+
+class PostOutAnnual(BaseModel):
+    year: int
+    sum_annually: int
+    

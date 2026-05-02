@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status, HTTPException
 from typing import Optional, List
+from datetime import datetime
 
 from .. import schemas
 from ..database import conn, cursor
@@ -85,8 +86,8 @@ def update(id: int):
 
 
 
-#(Without Filter) GET /expenses
-#(With filter) GET /expenses?month=january
+#GET /expenses  (Without Filter) 
+#GET /expenses?month=january  (With filter) 
 @router.get("/",status_code=status.HTTP_200_OK, response_model=List[schemas.PostOut])
 def get_expenses( month: Optional[str] = "" ):
     #print(month)
@@ -102,6 +103,32 @@ def get_expenses( month: Optional[str] = "" ):
     
     except:
             raise HTTPException(status_code=400, detail="Data not found")
+
+    return data
+
+
+
+
+#GET /expenses/summary?year=2024
+@router.get("/summary",status_code=status.HTTP_200_OK, response_model=schemas.PostOutAnnual)
+def get_expenses( year: Optional[int] = datetime.now().year):
+
+    cursor.execute("""SELECT EXTRACT(YEAR FROM created_at) FROM expense WHERE EXTRACT(YEAR FROM created_at) = %s""", (year,))
+    data = cursor.fetchall()
+    print(data)
+
+    if len(data) > 0:
+        if year:
+            cursor.execute("""SELECT SUM(quantity * price) AS sum_annually FROM expense WHERE EXTRACT(YEAR FROM created_at) = %s""", (year,))
+
+        else:
+            cursor.execute("""SELECT SUM(quantity * price) AS sum_annually FROM expense WHERE EXTRACT(YEAR FROM created_at) = %s""", (year,))
+    
+        data = cursor.fetchone()
+        data['year'] = year
+
+    else:
+        raise HTTPException(status_code=400, detail="Data not found")
 
     return data
 
