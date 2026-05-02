@@ -5,11 +5,14 @@ from ..database import conn, cursor
 
 
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/expenses",
+    tags=['Posts']
+)
 
 
-
-@router.post("/expenses", status_code=status.HTTP_201_CREATED, response_model=schemas.PostOut)
+#POST/expenses
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostOut)
 def expenses(post: schemas.PostCreate):
 
     if post.quantity <= 0:
@@ -28,11 +31,11 @@ def expenses(post: schemas.PostCreate):
 
 
 
-
-@router.patch("/expenses/{id}", status_code=status.HTTP_200_OK, response_model=schemas.PostOut)
+#PATCH/expenses/{id}
+@router.patch("/{id}", status_code=status.HTTP_200_OK, response_model=schemas.PostOut)
 def update(id: int, data: schemas.UserUpdate):
 
-    cursor.execute("SELECT * FROM expense WHERE id = %s", (id,))
+    cursor.execute("""SELECT * FROM expense WHERE id = %s""", (id,))
     entity = cursor.fetchone()
 
     if not entity:
@@ -59,3 +62,20 @@ def update(id: int, data: schemas.UserUpdate):
     conn.commit()
 
     return updated_user
+
+
+
+#DELETE /expenses/{id}
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def update(id: int):
+
+    cursor.execute("""SELECT * FROM expense WHERE id = %s""", (id,))
+    entity = cursor.fetchone()
+
+    if not entity:
+        raise HTTPException(status_code=404, detail="User not found")
+
+
+    cursor.execute("DELETE  FROM expense WHERE id = %s RETURNING *", (id,))
+    deleted_entity = cursor.fetchone()
+    conn.commit()
