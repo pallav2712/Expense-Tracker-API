@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 
 
@@ -24,7 +24,13 @@ class UserUpdate(BaseModel):
     price: Optional[int] = None
 
 
-class PostOutAnnual(BaseModel):
+
+class MonthlyData(BaseModel):
+    month: str
+    total: float
+
+class SummaryResponse(BaseModel):
     year: int
-    sum_annually: int
+    monthly: List[MonthlyData]
+    yearly_total: int
     
