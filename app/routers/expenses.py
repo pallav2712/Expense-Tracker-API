@@ -118,7 +118,7 @@ def get_expenses( month: Optional[str] = "" ):
 
 
 #GET /expenses/summary?year=2024
-@router.get("/summary", status_code=status.HTTP_200_OK)#,response_model=schemas.SummaryResponse)
+@router.get("/summary", status_code=status.HTTP_200_OK,response_model=schemas.SummaryResponse)
 def get_expenses(year: Optional[int] = None):
 
     if year is None:
@@ -156,13 +156,16 @@ def get_expenses(year: Optional[int] = None):
     current_month = datetime.now().month
 
     for month, total in sorted(monthly_totals.items()):
-        if year <= current_year:
+        
+        if year < current_year:
             monthly_data.append({"month": reverse_monthdict[month],
                                 "monthly_expenditure": monthly_totals[month]})
-        else:
-            return "Future years are invalid"
-
-
+        
+        elif year == current_year:
+            monthly_data.append({"month": reverse_monthdict[month],
+                                "monthly_expenditure": monthly_totals[month]})
+            if month >= current_month:
+                break 
         
     return {"year": year,
             "yearly_expenditure": yearly_total,
