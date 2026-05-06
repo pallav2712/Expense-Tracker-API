@@ -105,9 +105,8 @@ def get_expenses( month: Optional[str] = "" ):
             cursor.execute("""SELECT * FROM expense""")
         else:
             int_month = monthdict[month]
-            cursor.execute("""
-                        
-                            = %s""", (int_month,))
+            cursor.execute("""SELECT * FROM expense 
+                           WHERE EXTRACT(MONTH FROM created_at) = %s""", (int_month,))
         
         data = cursor.fetchall()
 
@@ -119,7 +118,7 @@ def get_expenses( month: Optional[str] = "" ):
 
 
 #GET /expenses/summary?year=2024
-@router.get("/summary", status_code=status.HTTP_200_OK, response_model=schemas.SummaryResponse)
+@router.get("/summary", status_code=status.HTTP_200_OK,response_model=schemas.SummaryResponse)
 def get_expenses(year: Optional[int] = None):
 
     if year is None:
@@ -129,35 +128,144 @@ def get_expenses(year: Optional[int] = None):
         raise HTTPException(status_code=400, detail="Year must be a positive integer")
 
     cursor.execute("""
-        SELECT 
-            EXTRACT(MONTH FROM created_at) AS month,
-            COALESCE(SUM(quantity * price), 0) AS total
-        FROM expense
-        WHERE EXTRACT(YEAR FROM created_at) = %s
-        GROUP BY ROLLUP(month)
-        ORDER BY month;
+        SELECT * FROM expense
+        WHERE EXTRACT(year from created_at) = %s
     """, (year,))
 
     rows = cursor.fetchall()
     print(rows)
+    
 
-    monthly_data = []
+    monthly_totals = {}
     yearly_total = 0
+    
 
     for row in rows:
-        if row["month"] is None:
-            yearly_total = row["total"]
-        else:
-            monthly_data.append({
-                "month": reverse_monthdict[int(row["month"])],
-                "total": row["total"]
-            })
+        if row["created_at"]:
+            date = row["created_at"]
+            month = date.month
+            total = row['quantity'] * row['price']
 
-    return {
-        "year": year,
-        "monthly": monthly_data,
-        "yearly_total": yearly_total 
-    }
+            if month in monthly_totals:
+                monthly_totals[month] += total
+            else:
+                monthly_totals[month] = total
+
+            yearly_total += total
+            
+    monthly_data = []
+    for month, total in sorted(monthly_totals.items()): 
+        monthly_data.append({"month": reverse_monthdict[month],
+                             "monthly_expenditure": monthly_totals[month]})
+        
+    return {"year": year,
+            "yearly_expenditure": yearly_total,
+            "monthly_summary": monthly_data}
+
+
+
+
+
+
+
+
+
+
+
+# #GET /expenses/summary?year=2024
+# @router.get("/summary", status_code=status.HTTP_200_OK, response_model=schemas.SummaryResponse)
+# def get_expenses(year: Optional[int] = None):
+
+#     if year is None:
+#         year = datetime.now().year
+
+#     if year <= 0:
+#         raise HTTPException(status_code=400, detail="Year must be a positive integer")
+
+#     cursor.execute("""
+#         SELECT 
+#             EXTRACT(MONTH FROM created_at) AS month,
+#             COALESCE(SUM(quantity * price), 0) AS total
+#         FROM expense
+#         WHERE EXTRACT(YEAR FROM created_at) = %s
+#         GROUP BY ROLLUP(month)
+#         ORDER BY month;
+#     """, (year,))
+
+#     rows = cursor.fetchall()
+#     print(rows)
+
+#     monthly_data = []
+#     yearly_total = 0
+
+#     for row in rows:
+#         if row["month"] is None:
+#             yearly_total = row["total"]
+#         else:
+#             monthly_data.append({
+#                 "month": reverse_monthdict[int(row["month"])],
+#                 "total": row["total"]
+#             })
+
+#     return {
+#         "year": year,
+#         "monthly": monthly_data,
+#         "yearly_total": yearly_total 
+#     }
+
+
+#GET /expenses/summary?year=2024
+# @router.get("/summary", status_code=status.HTTP_200_OK)
+# def get_expenses(year: Optional[int] = None):
+
+#     if year is None:
+#         year = datetime.now().year
+
+#     if year <= 0:
+#         raise HTTPException(status_code=400, detail="Year must be a positive integer")
+
+#     cursor.execute("""
+#         SELECT * FROM expense
+#         WHERE EXTRACT(year from created_at) = %s
+#     """, (year,))
+
+#     rows = cursor.fetchall()
+#     print(rows)
+    
+
+#     monthly_data = []
+#     yearly_total = 0
+#     annual_summary = []
+
+#     for row in rows:
+#         if row["created_at"]:
+#             date = row["created_at"]
+#             monthly_total = row['quantity'] * row['price']
+#             monthly_data.append({'month': reverse_monthdict[int(date.month)],
+#                                 'monthly_total': monthly_total})
+#             yearly_total += monthly_total
+#     if not monthly_data:
+#         annual_summary.append({"yearly_total" : yearly_total})
+#     else:
+#         annual_summary.append({"yearly_total": yearly_total, "monthly_summary": monthly_data} )
+
+
+#     return annual_summary
+    
+
+    # for item in monthly_data:
+    #     yearly_total = {}
+    #     else:
+    #         monthly_data.append({
+    #             "month": reverse_monthdict[int(row["month"])],
+    #             "total": row["total"]
+    #         })
+
+    # return {
+    #     "year": year,
+    #     "monthly": monthly_data,
+    #     "yearly_total": yearly_total 
+    # }
 
 
 

@@ -27,10 +27,10 @@ class UserUpdate(BaseModel):
 
 class MonthlyData(BaseModel):
     month: str
-    total: float
+    monthly_expenditure: int
 
 class SummaryResponse(BaseModel):
     year: int
-    monthly: List[MonthlyData]
-    yearly_total: int
+    yearly_expenditure: int
+    monthly_summary: List[MonthlyData]
     
