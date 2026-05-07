@@ -1,36 +1,33 @@
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import time
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from .config import settings
 
 
-try:
-    conn = psycopg2.connect(host=settings.database_hostname, database=settings.database_name, 
-                            user=settings.database_username, password=settings.database_password,
-                            cursor_factory=RealDictCursor)
-    cursor = conn.cursor()
-    print("Database connection was sucessfull!")
+SQLALCHEMY_DATABASE_URL =( 
+        f"postgresql://{settings.database_username}:"
+        f"{settings.database_password}@"
+        f"{settings.database_hostname}:"
+        f"{settings.database_port}/"
+        f"{settings.database_name}"
+)
 
-except Exception as error:
-    print("Connecting to database failed")
-    print("Error: ", error)   
-    time.sleep(2)
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
+class Base(DeclarativeBase):
+    pass
 
 
+SessionLocal = sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=engine
+    )
 
-#expense schema
-expense_table = '''
-    CREATE TABLE IF NOT EXISTS expense (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    item VARCHAR NOT NULL,
-    quantity INT NOT NULL,
-    price INT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-'''
 
-cursor.execute(expense_table)
-conn.commit()
-
-print("Expense table created successfully!")
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
